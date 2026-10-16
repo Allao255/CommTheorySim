@@ -1,0 +1,120 @@
+:root {
+  --bg: #0e1116;
+  --panel: #151a21;
+  --panel-2: #1b212a;
+  --border: #262e3a;
+  --text: #e6e9ee;
+  --muted: #8b95a5;
+  --grid: #222a35;
+  --accent: #5cc8ff;
+  --c-msg: #f5b041;
+  --c-car: #8b95a5;
+  --c-mod: #5cc8ff;
+  --c-env: #ff7a90;
+  --c-theory: #b388ff;
+  --c-line: #7ee081;
+  --c-noise: #ff9f43;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+.top {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--panel);
+  position: sticky; top: 0; z-index: 5;
+}
+.brand h1 { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: .2px; }
+.brand .sub { color: var(--muted); font-size: 12px; }
+.tabs { display: flex; gap: 6px; }
+.tabs button {
+  background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);
+  padding: 7px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;
+}
+.tabs { align-items: center; }
+.tabs .tabs-sep { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 2px 0 10px; }
+.tabs button.minor { padding: 5px 11px; font-size: 13px; }
+.tabs button.active { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+
+.layout { display: grid; grid-template-columns: 300px 1fr; min-height: calc(100vh - 58px); }
+.panel {
+  background: var(--panel); border-right: 1px solid var(--border);
+  padding: 14px 16px 40px; overflow-y: auto; max-height: calc(100vh - 58px); position: sticky; top: 58px;
+}
+.main { padding: 14px 18px 40px; min-width: 0; }
+
+.group { margin-bottom: 18px; }
+.group h3 { margin: 0 0 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 600; }
+.ctl { margin-bottom: 10px; }
+.ctl .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ctl label { font-size: 13px; }
+.ctl .val { font-variant-numeric: tabular-nums; color: var(--accent); font-size: 13px; }
+.ctl input[type=range] { width: 100%; accent-color: var(--accent); margin: 4px 0 0; }
+.ctl select, .ctl input[type=text] {
+  width: 100%; margin-top: 4px; background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font: inherit;
+}
+.ctl input[type=text] { font-family: ui-monospace, monospace; }
+.ctl .help { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.btn {
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px;
+  padding: 5px 10px; cursor: pointer; font: inherit; font-size: 12.5px;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.small { padding: 3px 9px; font-size: 12px; }
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+.chk input { accent-color: var(--accent); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 10px; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; }
+.card .k { color: var(--muted); font-size: 11.5px; }
+.card .v { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.card .s { color: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+
+.equation {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 14px; margin-bottom: 10px; font-family: "Cambria Math", "STIX Two Math", Georgia, serif; font-size: 15px;
+}
+.equation .eq { margin: 2px 0; }
+.equation .where { color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12.5px; }
+.notes:empty { display: none; }
+.notes { margin-bottom: 10px; }
+.notes div { background: #3a2a12; border: 1px solid #6b4a17; color: #ffd28a; border-radius: 8px; padding: 6px 10px; font-size: 13px; margin-bottom: 6px; }
+
+.plots { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px 4px; margin-bottom: 12px; }
+.plots-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 2px 4px 6px; font-weight: 600; }
+.plots-bar .hint { color: var(--muted); font-weight: 400; font-size: 12px; flex: 1; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.seg button { background: var(--panel-2); color: var(--muted); border: 0; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 12.5px; }
+.seg button.active { background: var(--accent); color: var(--bg); }
+
+.plot { margin-bottom: 6px; }
+.plot-head { display: flex; align-items: baseline; gap: 12px; padding: 0 4px; min-height: 20px; flex-wrap: wrap; }
+.plot-title { font-size: 13px; font-weight: 600; }
+.plot-legend { display: inline-flex; gap: 10px; color: var(--muted); font-size: 12px; }
+.plot-legend i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+.plot-readout { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.plot canvas { width: 100%; display: block; cursor: crosshair; touch-action: none; }
+
+.explain { color: var(--muted); font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 16px; }
+.explain h4 { color: var(--text); margin: 8px 0 4px; font-size: 13.5px; }
+.explain p, .explain li { margin: 4px 0; }
+.explain b { color: var(--text); }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  .panel { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--border); }
+  .top { flex-direction: column; align-items: flex-start; }
+  .main { padding: 12px; }
+}
+
+.plots-bar.analyzer { font-weight: 400; font-size: 12.5px; color: var(--muted); gap: 10px; padding-top: 0; }
+.plots-bar.analyzer:empty { display: none; }
+.plots-bar.analyzer label { display: inline-flex; align-items: center; gap: 5px; }
+.plots-bar.analyzer select {
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 3px 6px; font: inherit; font-size: 12.5px;
+}
+.plots-bar.analyzer .rbw { color: var(--accent); font-variant-numeric: tabular-nums; }

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulador de Modulação</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <h1>Simulador de Modulação</h1>
+      <span class="sub">tempo · frequência · teoria</span>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-scheme="am" class="active">AM</button>
+      <button data-scheme="fm">FM</button>
+      <span class="tabs-sep">digital</span>
+      <button data-scheme="ask" class="minor">ASK</button>
+      <button data-scheme="fsk" class="minor">FSK</button>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="panel" id="controls"></aside>
+
+    <main class="main">
+      <section class="cards" id="cards"></section>
+      <section class="equation" id="equation"></section>
+      <div class="notes" id="notes"></div>
+      <section class="plots" id="timePlots">
+        <div class="plots-bar">
+          <span>Domínio do tempo</span>
+          <span class="hint">Ctrl + roda: zoom · arrastar: deslocar · duplo clique: reiniciar</span>
+          <button id="animate" class="btn small">❚❚ Pausar</button>
+        </div>
+      </section>
+      <section class="plots" id="freqPlots">
+        <div class="plots-bar">
+          <span>Domínio da frequência</span>
+          <span class="seg" id="specView">
+          </span>
+          <span class="seg" id="specScale">
+            <button data-v="db" class="active">dB</button>
+            <button data-v="lin">Linear</button>
+          </span>
+          <label class="chk"><input type="checkbox" id="showTheory" checked> Teoria</label>
+          <span class="hint">Ctrl + roda: zoom · duplo clique: reiniciar</span>
+        </div>
+        <div class="plots-bar analyzer" id="analyzerBar"></div>
+      </section>
+      <section class="explain" id="explain"></section>
+    </main>
+  </div>
+
+  <!-- Scripts clássicos (sem módulos ES) para funcionar abrindo o arquivo direto -->
+  <script src="js/dsp.js"></script>
+  <script src="js/plot.js"></script>
+  <script src="js/digital.js"></script>
+  <script src="js/analog.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
