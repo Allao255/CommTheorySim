@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital@0;1&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=4">
+  <link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body>
   <header class="top">
@@ -42,6 +42,13 @@
         <div class="plots-bar">
           <span class="bar-title">Tempo</span>
           <span class="hint">Ctrl + roda: zoom · arrastar: deslocar · duplo clique: reiniciar</span>
+          <label class="speed" title="Velocidade da varredura">VEL.
+            <select id="animSpeed">
+              <option value="0.25">¼×</option><option value="0.5">½×</option><option value="1" selected>1×</option>
+              <option value="2">2×</option><option value="4">4×</option><option value="8">8×</option><option value="16">16×</option>
+            </select>
+          </label>
+          <span class="slowmo" id="slowmo"></span>
           <button id="animate" class="runstop running" title="Iniciar/parar a varredura"><i class="led"></i><span>RUN</span></button>
         </div>
       </section>
@@ -67,10 +74,10 @@
   </div>
 
   <!-- Scripts clássicos (sem módulos ES) para funcionar abrindo o arquivo direto -->
-  <script src="js/dsp.js?v=4"></script>
-  <script src="js/plot.js?v=4"></script>
-  <script src="js/digital.js?v=4"></script>
-  <script src="js/analog.js?v=4"></script>
-  <script src="js/main.js?v=4"></script>
+  <script src="js/dsp.js?v=6"></script>
+  <script src="js/plot.js?v=6"></script>
+  <script src="js/digital.js?v=6"></script>
+  <script src="js/analog.js?v=6"></script>
+  <script src="js/main.js?v=6"></script>
 </body>
 </html>

@@ -69,11 +69,20 @@ const controls = [
     ['FM banda estreita β = 0,2', () => { state.fm.mode = 'fm'; state.msg.type = 'sine'; state.fm.dev = 0.2 * state.msg.fm; }],
     ['β = 2,405 (J₀ = 0)', () => { state.fm.mode = 'fm'; state.msg.type = 'sine'; state.fm.dev = 2.4048 * state.msg.fm; }],
     ['β = 5 (banda larga)', () => { state.fm.mode = 'fm'; state.msg.type = 'sine'; state.fm.dev = 5 * state.msg.fm; }],
+    // Portadora baixa: Δf/fc = 50%, a compressão/expansão dos ciclos fica visível no tempo
+    ['Didático no tempo (fc = 2 kHz)', () => {
+      Object.assign(state, { fc: 2000 });
+      Object.assign(state.msg, { type: 'sine', fm: 100, W: 1000 });
+      Object.assign(state.fm, { mode: 'fm', dev: 1000 });
+    }],
   ], scheme: 'fm' },
   { key: 'fm.mode', label: 'Tipo', type: 'select', options: [['fm', 'FM (frequência ∝ m)'], ['pm', 'PM (fase ∝ m)']] },
   { key: 'fm.dev', label: 'Desvio de frequência de pico Δf', min: 10, max: 10000, step: 10, fmt: (v) => fmtSI(v, 'Hz', 4),
     show: () => state.fm.mode === 'fm',
-    help: () => state.msg.type === 'sine' ? `β = Δf/fm = ${toneBeta().toFixed(3)}` : `razão de desvio D = Δf/W = ${(state.fm.dev / state.msg.W).toFixed(3)}` },
+    help: () => (state.msg.type === 'sine' ? `β = Δf/fm = ${toneBeta().toFixed(3)}` : `razão de desvio D = Δf/W = ${(state.fm.dev / state.msg.W).toFixed(3)}`)
+      + (state.fm.dev / state.fc < 0.2
+        ? ` · Δf/fc = ${(100 * state.fm.dev / state.fc).toFixed(0)}%: no tempo a variação de frequência é sutil — veja fᵢ(t) ou reduza fc`
+        : '') },
   { key: 'fm.kp', label: 'Desvio de fase de pico kp', min: 0.05, max: 10, step: 0.05, fmt: (v) => `${v.toFixed(2)} rad`,
     show: () => state.fm.mode === 'pm', help: () => state.msg.type === 'sine' ? `β = kp = ${state.fm.kp.toFixed(2)} (tom)` : '' },
 
@@ -219,6 +228,7 @@ let lastKeys = {};
 
 function render() {
   if (isAnalog()) renderAnalog(); else renderDigital();
+  updateSlowmo();
   syncControls(); // leituras que dependem do resultado (ex.: SNR do slider de ruído)
 }
 
@@ -696,6 +706,19 @@ document.getElementById('showTheory').onchange = (e) => { state.showTheory = e.t
 // Analógico: 1 período da mensagem a cada 1,5 s (o registro é periódico, então corre sem fim).
 // Digital: 1 bit a cada 0,4 s, voltando ao início no fim do registro.
 const animBtn = document.getElementById('animate');
+let animSpeed = 1;
+
+// Segundos reais por segundo simulado em 1×: 1 período da mensagem a cada 1,5 s (analógico), 1 bit a cada 0,4 s (digital)
+const realPerSimSecond = () => (isAnalog() ? 1.5 * state.msg.fm : 0.4 * state.Rb);
+
+// Fator de câmera lenta: segundos reais por segundo simulado
+function updateSlowmo() {
+  const f = realPerSimSecond() / animSpeed;
+  const txt = f >= 1e6 ? `${(f / 1e6).toPrecision(3)} M` : f >= 1e3 ? `${(f / 1e3).toPrecision(3)} mil` : f.toPrecision(3);
+  document.getElementById('slowmo').textContent = `câmera lenta ×${txt}`;
+  document.getElementById('slowmo').title = `1 s simulado = ${fmtSI(f, 's', 3)} reais`;
+}
+document.getElementById('animSpeed').onchange = (e) => { animSpeed = +e.target.value; updateSlowmo(); };
 let anim = null;
 function startAnim() {
   animBtn.classList.add('running'); animBtn.querySelector('span').textContent = 'RUN';
@@ -704,7 +727,7 @@ function startAnim() {
     const dtw = Math.min(0.1, (now - last) / 1000); last = now;
     const v = pMsg.view, h = pMsg.home;
     if (v && h) {
-      const adv = isAnalog() ? dtw / (1.5 * state.msg.fm) : dtw / (0.4 * state.Rb);
+      const adv = dtw * animSpeed / realPerSimSecond();
       let x0 = v.x0 + adv, x1 = v.x1 + adv;
       if (h.max !== undefined && x1 > h.max) { x1 -= x0; x0 = 0; }
       pMsg.setView(x0, x1);

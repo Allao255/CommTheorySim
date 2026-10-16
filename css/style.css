@@ -190,6 +190,11 @@ select:focus, .ctl input[type=text]:focus { outline: none; border-color: var(--a
 .seg button:hover { color: var(--text); }
 .seg button.active { background: var(--raise); color: var(--accent); }
 
+/* Velocidade da varredura */
+.speed { display: inline-flex; align-items: center; gap: 6px; font: 10.5px var(--font-mono); letter-spacing: .6px; color: var(--muted); }
+.speed select { width: auto; margin: 0; padding: 3px 6px; font: 12px var(--font-mono); }
+.slowmo { font: 11px var(--font-mono); color: var(--accent); font-variant-numeric: tabular-nums; }
+
 /* RUN/STOP com LED */
 .runstop {
   display: inline-flex; align-items: center; gap: 7px;
