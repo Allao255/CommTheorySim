@@ -179,13 +179,21 @@ class Plot {
     }
 
     const col = {
-      grid: cssVar('--grid'), axis: cssVar('--muted'), text: cssVar('--text'), cursor: cssVar('--accent'),
+      grid: cssVar('--grid'), axis: cssVar('--muted'), frame: cssVar('--border'), text: cssVar('--text'),
+      cursor: cssVar('--accent'), bg: cssVar('--plot-bg'),
     };
+    const mono = cssVar('--font-mono') || 'monospace';
+    this.fontMono = mono;
 
-    // Grade e eixos
-    g.font = '11px ui-sans-serif, system-ui, sans-serif';
+    // Fundo do "display"
+    g.fillStyle = col.bg;
+    g.fillRect(l, t, pw, ph);
+
+    // Retícula pontilhada e eixos
+    g.font = `10.5px ${mono}`;
     g.lineWidth = 1;
     g.strokeStyle = col.grid;
+    g.setLineDash([1, 3]);
     g.fillStyle = col.axis;
     const xs = niceStep(x1 - x0, Math.max(3, pw / 90));
     g.textAlign = 'center'; g.textBaseline = 'top';
@@ -203,7 +211,8 @@ class Plot {
       const v = Math.abs(y) < ys * 1e-6 ? 0 : y;
       g.fillText(this.opts.yFmt ? this.opts.yFmt(v) : fmtSI(v, this.opts.yUnit, this.opts.yDigits), l - 6, py);
     }
-    g.strokeStyle = col.axis;
+    g.setLineDash([]);
+    g.strokeStyle = col.frame;
     g.strokeRect(l + 0.5, t + 0.5, pw, ph);
 
     g.save();
@@ -257,7 +266,7 @@ class Plot {
     // Rótulos de texto (ex.: bits)
     if (this.labels.length) {
       g.textAlign = 'center'; g.textBaseline = 'top';
-      g.font = '600 12px ui-monospace, monospace';
+      g.font = `600 12px ${mono}`;
       const spanPx = pw / Math.max(1, (x1 - x0) / (this.labels[1] ? this.labels[1].x - this.labels[0].x : 1));
       if (spanPx > 9) {
         for (const lb of this.labels) {
@@ -267,7 +276,7 @@ class Plot {
           g.fillText(lb.text, px, t + 3);
         }
       }
-      g.font = '11px ui-sans-serif, system-ui, sans-serif';
+      g.font = `10.5px ${mono}`;
     }
 
     // Cursor

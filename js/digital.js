@@ -137,12 +137,12 @@ function simulateDigital(p) {
     if (fc - dev <= 0) notes.push('fc − Δf ≤ 0: a frequência inferior é negativa/nula — o espectro se rebate em torno de 0 Hz.');
   }
 
-  // Ruído AWGN com Eb/N0 especificado: N0 unilateral => σ² = N0·fs/2
+  // Ruído AWGN com densidade N0 do canal: σ² = N0·fs/2
   const Ps = power(s);
   const Eb = Ps * T;
   let rx = s, N0 = 0;
   if (p.noise.on) {
-    N0 = Eb / Math.pow(10, p.noise.EbN0dB / 10);
+    N0 = Math.pow(10, p.noise.N0dB / 10); // N0 unilateral (W/Hz), fixado pelo canal
     const sigma = Math.sqrt(N0 * fs / 2);
     const r = rng(p.seed * 7919 + 13);
     rx = new Float64Array(N);

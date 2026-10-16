@@ -260,9 +260,12 @@ function makeWindow(type, n) {
 // opcional e média de potência. Escala: uma senoide de amplitude A exatamente
 // no centro de um bin aparece com P = A²/2 (dBW); fora do centro aparece menor
 // (perda de "scalloping"). Ruído branco aparece com N0·RBW por bin.
-function analyzerSpectrum(x, fs, { nfft, win, pad = 1, avg = 1, offset = 0 }) {
+// circular = false: os quadros ficam dentro do registro (sinal não periódico).
+// density = true: divide pela RBW ⇒ PSD em V²/Hz (equivale ao método de Welch).
+function analyzerSpectrum(x, fs, { nfft, win, pad = 1, avg = 1, offset = 0, circular = true, density = false }) {
   const N = x.length;
   nfft = Math.min(nfft, N);
+  const span = N - nfft + 1;
   const M = nfft * pad;
   const { w, s1, enbwBins } = makeWindow(win, nfft);
   const nb = M / 2 + 1;
@@ -270,13 +273,14 @@ function analyzerSpectrum(x, fs, { nfft, win, pad = 1, avg = 1, offset = 0 }) {
   const re = new Float64Array(M), im = new Float64Array(M);
   const hop = nfft >> 1;
   for (let a = 0; a < avg; a++) {
-    const start = offset + a * hop;
+    const start = circular ? offset + a * hop : (offset + a * hop) % span;
     re.fill(0); im.fill(0);
     for (let i = 0; i < nfft; i++) re[i] = x[(((start + i) % N) + N) % N] * w[i];
     fft(re, im);
     for (let k = 0; k < nb; k++) acc[k] += re[k] * re[k] + im[k] * im[k];
   }
-  const scale = 1 / (s1 * s1 * avg);
+  const rbw = (enbwBins * fs) / nfft;
+  const scale = 1 / (s1 * s1 * avg * (density ? rbw : 1));
   for (let k = 0; k < nb; k++) acc[k] *= (k === 0 || k === nb - 1) ? scale : 2 * scale;
-  return { P: acc, df: fs / M, rbw: (enbwBins * fs) / nfft, binHz: fs / nfft, nfft, enbwBins };
+  return { P: acc, df: fs / M, rbw, binHz: fs / nfft, nfft, enbwBins, avg };
 }

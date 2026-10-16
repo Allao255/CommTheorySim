@@ -3,21 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Simulador de Modulação</title>
-  <link rel="stylesheet" href="css/style.css">
+  <title>CommTheorySim</title>
+  <!-- Fontes IBM Plex (sem internet, cai nas fontes do sistema) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital@0;1&display=swap">
+  <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
   <header class="top">
     <div class="brand">
-      <h1>Simulador de Modulação</h1>
-      <span class="sub">tempo · frequência · teoria</span>
+      <svg class="logo" viewBox="0 0 48 24" aria-hidden="true">
+        <path d="M2 12 C 6 2, 10 2, 14 12 S 22 22, 26 12 S 34 2, 38 12 S 44 18, 46 12" />
+      </svg>
+      <div>
+        <h1>CommTheorySim</h1>
+        <span class="sub">bancada virtual de modulação</span>
+      </div>
     </div>
-    <nav class="tabs" id="tabs">
+    <nav class="tabs" id="tabs" aria-label="Modulação">
+      <span class="tabs-sep">analógico</span>
       <button data-scheme="am" class="active">AM</button>
       <button data-scheme="fm">FM</button>
       <span class="tabs-sep">digital</span>
-      <button data-scheme="ask" class="minor">ASK</button>
-      <button data-scheme="fsk" class="minor">FSK</button>
+      <button data-scheme="ask">ASK</button>
+      <button data-scheme="fsk">FSK</button>
     </nav>
   </header>
 
@@ -30,34 +40,37 @@
       <div class="notes" id="notes"></div>
       <section class="plots" id="timePlots">
         <div class="plots-bar">
-          <span>Domínio do tempo</span>
+          <span class="bar-title">Tempo</span>
           <span class="hint">Ctrl + roda: zoom · arrastar: deslocar · duplo clique: reiniciar</span>
-          <button id="animate" class="btn small">❚❚ Pausar</button>
+          <button id="animate" class="runstop running" title="Iniciar/parar a varredura"><i class="led"></i><span>RUN</span></button>
         </div>
       </section>
       <section class="plots" id="freqPlots">
         <div class="plots-bar">
-          <span>Domínio da frequência</span>
-          <span class="seg" id="specView">
-          </span>
+          <span class="bar-title">Frequência</span>
+          <span class="seg" id="specView"></span>
           <span class="seg" id="specScale">
             <button data-v="db" class="active">dB</button>
             <button data-v="lin">Linear</button>
           </span>
           <label class="chk"><input type="checkbox" id="showTheory" checked> Teoria</label>
-          <span class="hint">Ctrl + roda: zoom · duplo clique: reiniciar</span>
         </div>
         <div class="plots-bar analyzer" id="analyzerBar"></div>
       </section>
       <section class="explain" id="explain"></section>
+      <footer class="foot">
+        <span>CommTheorySim</span>
+        <span>feito por <a href="https://github.com/Allao255" target="_blank" rel="noopener">Allao255</a></span>
+        <a href="https://github.com/Allao255/CommTheorySim" target="_blank" rel="noopener">código-fonte ↗</a>
+      </footer>
     </main>
   </div>
 
   <!-- Scripts clássicos (sem módulos ES) para funcionar abrindo o arquivo direto -->
-  <script src="js/dsp.js"></script>
-  <script src="js/plot.js"></script>
-  <script src="js/digital.js"></script>
-  <script src="js/analog.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/dsp.js?v=4"></script>
+  <script src="js/plot.js?v=4"></script>
+  <script src="js/digital.js?v=4"></script>
+  <script src="js/analog.js?v=4"></script>
+  <script src="js/main.js?v=4"></script>
 </body>
 </html>

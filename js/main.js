@@ -19,11 +19,13 @@ const state = {
   seed: 1,
   ask: { m: 1, pulse: 'rect', beta: 0.35 },
   fsk: { dev: 250, phase: 'continuous', pulse: 'rect', BT: 0.3, dtheta: 90 },
-  noise: { on: false, EbN0dB: 15, gammaDb: 20 },
+  noise: { on: false, N0dB: -60 },
   specView: 'tx',
   specScale: 'db',
   // Analisador de espectro (estilo GNU Radio: FFT janelada, Blackman-Harris)
   an: { mode: 'analyzer', win: 'bh', nfft: 16384, pad: 1, avg: 4 },
+  // Digital: PSD (dBW/Hz); FFT automática (RBW ≈ Rb/16) e média de todos os quadros (Welch)
+  anD: { mode: 'analyzer', win: 'bh', nfft: 'auto', pad: 1, avg: 'all' },
   showTheory: true,
 };
 
@@ -104,10 +106,17 @@ const controls = [
 
   { group: 'Canal' },
   { key: 'noise.on', label: 'Ruído AWGN', type: 'check' },
-  { key: 'noise.gammaDb', label: 'γ = Pₛ/(N₀W)', min: -5, max: 60, step: 0.5, fmt: (v) => `${v} dB`,
-    show: () => state.noise.on && isAnalog(), help: () => 'SNR de referência: potência recebida / ruído na banda da mensagem' },
-  { key: 'noise.EbN0dB', label: 'Eb/N₀', min: -5, max: 40, step: 0.5, fmt: (v) => `${v} dB`, show: () => state.noise.on && !isAnalog() },
+  { key: 'noise.N0dB', label: 'Nível de ruído N₀', min: -110, max: -10, step: 0.5, fmt: (v) => `${v} dBW/Hz`,
+    show: () => state.noise.on, help: noiseHelp },
 ];
+
+// Leitura da SNR resultante do nível de ruído (o canal fixa N₀; a SNR depende do sinal)
+function noiseHelp() {
+  if (!sim || !sim.N0 || sim.params.scheme !== state.scheme) return 'mais à direita = mais ruído';
+  return isAnalog()
+    ? `→ γ = Pₛ/(N₀W) = ${dB(sim.gamma).toFixed(1)} dB · mais à direita = mais ruído`
+    : `→ Eb/N₀ = ${dB(sim.Eb / sim.N0).toFixed(1)} dB · mais à direita = mais ruído`;
+}
 
 const get = (k) => k.split('.').reduce((o, p) => o[p], state);
 const set = (k, v) => { const ps = k.split('.'); const last = ps.pop(); ps.reduce((o, p) => o[p], state)[last] = v; };
@@ -210,6 +219,7 @@ let lastKeys = {};
 
 function render() {
   if (isAnalog()) renderAnalog(); else renderDigital();
+  syncControls(); // leituras que dependem do resultado (ex.: SNR do slider de ruído)
 }
 
 // ================= ANALÓGICO =================
@@ -299,7 +309,7 @@ function renderSpectrumAnalog(C, keepF) {
     df = sim.df;
   } else {
     const x = view === 'msg' ? sim.m : view === 'demod' ? sim.demod : sim.rx;
-    spec = analyzerSpectrum(x, sim.fs, { ...an, offset: anOffset });
+    spec = analyzerSpectrum(x, sim.fs, resolveAn(an, sim.N, 16384, true));
     P = spec.P; df = spec.df;
   }
   sim.anSpec = spec;
@@ -356,22 +366,34 @@ function renderSpectrumAnalog(C, keepF) {
 const AN_OPTS = [
   ['mode', 'Exibição', [['analyzer', 'Analisador (FFT janelada)'], ['ideal', 'Raias ideais (FFT coerente)']]],
   ['win', 'Janela', Object.entries(WINDOWS).map(([k, v]) => [k, v.name])],
-  ['nfft', 'FFT', [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536].map((n) => [n, String(n)])],
+  ['nfft', 'FFT', [['auto', 'auto'], ...[256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536].map((n) => [n, String(n)])]],
   ['pad', 'Zero-padding', [[1, '×1'], [2, '×2'], [4, '×4'], [8, '×8']]],
-  ['avg', 'Médias', [1, 2, 4, 8, 16, 32].map((n) => [n, String(n)])],
+  ['avg', 'Médias', [...[1, 2, 4, 8, 16, 32, 64].map((n) => [n, String(n)]), ['all', 'todas']]],
 ];
+
+// Configuração do analisador da família atual (analógico ou digital)
+const curAn = () => (isAnalog() ? state.an : state.anD);
+
+// Converte 'auto'/'all' em números. circular: o registro é periódico (analógico)
+function resolveAn(A, N, autoNfft, circular) {
+  const nfft = Math.min(N, A.nfft === 'auto' ? autoNfft : A.nfft);
+  const hop = nfft / 2;
+  const frames = circular ? Math.max(1, Math.floor(N / hop)) : Math.floor((N - nfft) / hop) + 1;
+  const avg = A.avg === 'all' ? frames : A.avg;
+  return { nfft, win: A.win, pad: A.pad, avg, offset: anOffset, circular };
+}
 
 function buildAnalyzerBar() {
   const bar = document.getElementById('analyzerBar');
-  if (!isAnalog()) { bar.innerHTML = ''; return; }
+  const A = curAn();
   bar.innerHTML = AN_OPTS.map(([k, label, opts]) =>
     `<label data-k="${k}">${label} <select data-k="${k}">${opts.map(([v, t]) =>
-      `<option value="${v}"${String(state.an[k]) === String(v) ? ' selected' : ''}>${t}</option>`).join('')}</select></label>`).join('')
+      `<option value="${v}"${String(A[k]) === String(v) ? ' selected' : ''}>${t}</option>`).join('')}</select></label>`).join('')
     + '<span class="rbw" id="rbwInfo"></span>';
   for (const sel of bar.querySelectorAll('select')) {
     sel.onchange = () => {
-      const k = sel.dataset.k;
-      state.an[k] = k === 'mode' || k === 'win' ? sel.value : +sel.value;
+      const v = sel.value;
+      curAn()[sel.dataset.k] = /^\d+$/.test(v) ? +v : v;
       updateAnalyzerBarVisibility();
       schedule();
     };
@@ -381,7 +403,8 @@ function buildAnalyzerBar() {
 
 function updateAnalyzerBarVisibility() {
   for (const l of document.querySelectorAll('#analyzerBar label')) {
-    l.style.display = l.dataset.k === 'mode' || state.an.mode === 'analyzer' ? '' : 'none';
+    const k = l.dataset.k;
+    l.style.display = k === 'mode' ? (isAnalog() ? '' : 'none') : (curAn().mode === 'analyzer' ? '' : 'none');
   }
 }
 
@@ -389,18 +412,21 @@ function updateAnalyzerInfo() {
   const el = document.getElementById('rbwInfo');
   if (!el) return;
   const s = sim.anSpec;
+  const A = curAn();
   el.textContent = s
-    ? `bin = ${fmtSI(s.binHz, 'Hz', 3)} · RBW = ${fmtSI(s.rbw, 'Hz', 3)} (${s.enbwBins.toFixed(2)} bins)${s.nfft < state.an.nfft ? ` · FFT limitada a ${s.nfft}` : ''}`
+    ? `FFT ${s.nfft} · bin = ${fmtSI(s.binHz, 'Hz', 3)} · RBW = ${fmtSI(s.rbw, 'Hz', 3)} (${s.enbwBins.toFixed(2)} bins) · ${s.avg} médias${A.nfft !== 'auto' && s.nfft < A.nfft ? ` · FFT limitada a ${s.nfft} (tamanho do registro)` : ''}`
     : `resolução ${sim.df} Hz, sem janela: cada raia cai exatamente num bin`;
 }
 
 // Atualização ao vivo: o analisador "consome" novos quadros do sinal, como no GNU Radio
 let lastLive = 0;
 function liveSpectrum(now) {
-  if (!isAnalog() || state.an.mode !== 'analyzer' || !sim || sim.params.scheme !== state.scheme || now - lastLive < 120) return;
+  const A = curAn();
+  if (A.mode !== 'analyzer' || A.avg === 'all' || !sim || sim.params.scheme !== state.scheme || now - lastLive < 120) return;
   lastLive = now;
-  anOffset = (anOffset + Math.min(state.an.nfft, sim.N) * Math.max(1, state.an.avg) / 2) % sim.N;
-  renderSpectrumAnalog(colors(), true);
+  const nfft = Math.min(sim.N, A.nfft === 'auto' ? (isAnalog() ? 16384 : sim.nfft) : A.nfft);
+  anOffset = (anOffset + nfft * A.avg / 2) % sim.N;
+  if (isAnalog()) renderSpectrumAnalog(colors(), true); else renderSpectrumDigital(colors(), true);
 }
 
 function renderCardsAnalog() {
@@ -422,7 +448,7 @@ function renderCardsAnalog() {
   }
   if (p.noise.on) {
     const cnr = s.Ps / (s.N0 * s.Bth);
-    cards.push(['Ruído no canal', `γ = ${p.noise.gammaDb} dB`, `CNR na banda B = ${dB(cnr).toFixed(1)} dB`]);
+    cards.push(['Ruído no canal', `γ = ${dB(s.gamma).toFixed(1)} dB`, `N₀ = ${p.noise.N0dB} dBW/Hz · CNR na banda B = ${dB(cnr).toFixed(1)} dB`]);
     cards.push(['SNR de saída', `${dB(s.snrOut).toFixed(1)} dB`, `teoria (acima do limiar): ${dB(s.snrTh).toFixed(1)} dB · ganho ${dB(s.snrTh / s.gamma).toFixed(1)} dB`]);
   } else {
     cards.push(['Fidelidade da saída', `${Math.min(dB(s.snrOut), 200).toFixed(1)} dB`, 'sinal / distorção (sem ruído)']);
@@ -533,19 +559,23 @@ function renderDigital() {
 }
 
 function renderSpectrumDigital(C, keepF) {
-  const { specRx, specMsg, theory } = sim;
   const isMsg = state.specView === 'msg';
-  const spec = isMsg ? specMsg : specRx;
+  // Analisador em modo densidade (PSD, V²/Hz): mesma janela/FFT/médias do analógico.
+  // A teoria é recalculada na grade do analisador (raias com altura P/RBW).
+  const an = resolveAn(state.anD, sim.N, sim.nfft, false);
+  const spec = analyzerSpectrum(isMsg ? sim.msg : sim.rx, sim.fs, { ...an, density: true });
+  sim.anSpec = spec;
+  const theory = theoreticalPSD(sim.params, sim.fs, spec.nfft * an.pad, spec.rbw);
   const dfr = spec.df;
   const lin = state.specScale === 'lin';
   const conv = lin ? (v) => v : (v) => dB(v);
-  const y = Float64Array.from(spec.psd, conv);
+  const y = Float64Array.from(spec.P, conv);
 
-  const series = [{ x0: 0, dx: dfr, y, color: isMsg ? C.msg : (state.noise.on ? C.noise : C.mod), name: 'medida (Welch)', width: 1.3, fill: !lin }];
+  const series = [{ x0: 0, dx: dfr, y, color: isMsg ? C.msg : (state.noise.on ? C.noise : C.mod), name: `analisador (${WINDOWS[an.win].name})`, width: 1.3, fill: !lin }];
   const vlines = [];
   const hlines = [];
   let peak = 0;
-  for (const v of spec.psd) if (v > peak) peak = v;
+  for (const v of spec.P) if (v > peak) peak = v;
 
   const theoryCurve = isMsg ? theory.msgCurve : theory.curve;
   if (state.showTheory && theoryCurve) {
@@ -574,7 +604,8 @@ function renderSpectrumDigital(C, keepF) {
   pSpec.opts.yUnit = lin ? 'V²/Hz' : '';
   pSpec.opts.yFmt = lin ? null : (v, ro) => ro ? `${v.toFixed(1)} dBW/Hz` : `${Math.round(v)}`;
   pSpec.titleEl.textContent = (isMsg ? 'PSD da mensagem d(t)' : 'PSD do sinal modulado') + (lin ? ' [V²/Hz, 1 Ω]' : ' [dBW/Hz, 1 Ω]');
-  pSpec.setData({ series, vlines, hlines, home, keepView: keepF, yRange: lin ? [0, peak * 1.1] : [Math.floor(top - 80), Math.ceil(top + 6)] });
+  pSpec.setData({ series, vlines, hlines, home, keepView: keepF, yRange: lin ? [0, peak * 1.1] : [Math.floor(top - 100), Math.ceil(top + 6)] });
+  updateAnalyzerInfo();
 }
 
 function renderCardsDigital() {
@@ -597,10 +628,10 @@ function renderCardsDigital() {
     ['Energia por bit Eb', fmtSI(s.Eb, 'J', 3), 'Eb = P·Tb'],
     ['Banda ocupada 99%', fmtSI(s.obw.bw, 'Hz', 4), `${bwThLabel} = ${fmtSI(bwTh, 'Hz', 4)}`],
     ['Eficiência espectral', `${(p.Rb / s.obw.bw).toFixed(2)} bit/s/Hz`, 'Rb / B99%'],
-    ['Resolução (RBW)', fmtSI(s.specRx.enbw, 'Hz', 3), `Welch, Hann, ${s.specRx.segs} médias · ${s.nBits} bits`],
+    ['Resolução (RBW)', fmtSI(s.anSpec.rbw, 'Hz', 3), `${WINDOWS[state.anD.win].name}, ${s.anSpec.avg} médias · ${s.nBits} bits`],
   ];
   if (p.scheme === 'fsk') cards.splice(2, 0, ['Índice h = 2ΔfTb', (2 * p.fsk.dev * T).toFixed(3), p.fsk.phase === 'continuous' ? 'fase contínua' : 'fase descontínua']);
-  if (p.noise.on) cards.push(['Ruído', `Eb/N₀ = ${p.noise.EbN0dB} dB`, `N₀ = ${fmtSI(s.N0, 'W/Hz', 3)}`]);
+  if (p.noise.on) cards.push(['Ruído no canal', `Eb/N₀ = ${dB(s.Eb / s.N0).toFixed(1)} dB`, `N₀ = ${p.noise.N0dB} dBW/Hz`]);
   document.getElementById('cards').innerHTML = cards.map(([k, v, sub]) =>
     `<div class="card"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${sub}</div></div>`).join('');
 }
@@ -667,7 +698,7 @@ document.getElementById('showTheory').onchange = (e) => { state.showTheory = e.t
 const animBtn = document.getElementById('animate');
 let anim = null;
 function startAnim() {
-  animBtn.textContent = '❚❚ Pausar';
+  animBtn.classList.add('running'); animBtn.querySelector('span').textContent = 'RUN';
   let last = performance.now();
   const step = (now) => {
     const dtw = Math.min(0.1, (now - last) / 1000); last = now;
@@ -683,7 +714,10 @@ function startAnim() {
   };
   anim = requestAnimationFrame(step);
 }
-function stopAnim() { cancelAnimationFrame(anim); anim = null; animBtn.textContent = '▶ Animar'; }
+function stopAnim() {
+  cancelAnimationFrame(anim); anim = null;
+  animBtn.classList.remove('running'); animBtn.querySelector('span').textContent = 'STOP';
+}
 animBtn.onclick = () => (anim ? stopAnim() : startAnim());
 
 function renderExplain() {

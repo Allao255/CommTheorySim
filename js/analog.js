@@ -178,10 +178,11 @@ function simulateAnalog(p) {
 
   const Ps = power(s);
 
-  // Ruído: γ = Ps/(N0·W) (SNR de referência em banda base); σ² = N0·fs/2
+  // Ruído AWGN com densidade N0 do canal (W/Hz, unilateral); σ² = N0·fs/2.
+  // A SNR de referência resulta dela: γ = Ps/(N0·W)
   let rx = s, N0 = 0;
   if (p.noise.on) {
-    N0 = Ps / (W * Math.pow(10, p.noise.gammaDb / 10));
+    N0 = Math.pow(10, p.noise.N0dB / 10);
     const sigma = Math.sqrt(N0 * fs / 2);
     const r = rng(p.seed * 7919 + 17);
     rx = new Float64Array(N);
@@ -284,7 +285,7 @@ function simulateAnalog(p) {
   } else {
     Pth = Ac * Ac / 2;
   }
-  const gamma = p.noise.on ? Math.pow(10, p.noise.gammaDb / 10) : null;
+  const gamma = p.noise.on ? Ps / (N0 * W) : null;
   if (gamma !== null) {
     if (!isFM) snrTh = p.am.variant === 'am' ? eta * gamma : gamma;
     else snrTh = isPM ? p.fm.kp ** 2 * Pm * gamma : 3 * (p.fm.dev / W) ** 2 * Pm * gamma;
