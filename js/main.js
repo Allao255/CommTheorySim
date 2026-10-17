@@ -758,7 +758,7 @@ function renderExplain() {
     fm: `
     <h4>O que observar (FM/PM)</h4>
     <ul>
-      <li><b>Bessel:</b> com um tom, as raias ficam em f<sub>c</sub> ± n·f<sub>m</sub> com amplitude A<sub>c</sub>|J<sub>n</sub>(β)|. Os círculos roxos são a teoria; no modo "raias ideais" a FFT cai exatamente em cima, no modo analisador cada raia vira a forma da janela.</li>
+      <li><b>Bessel:</b> com um tom, as raias ficam em f<sub>c</sub> ± n·f<sub>m</sub> com amplitude A<sub>c</sub>|J<sub>n</sub>(β)|. Os círculos claros são a teoria; no modo "raias ideais" a FFT cai exatamente em cima, no modo analisador cada raia vira a forma da janela.</li>
       <li><b>β = 2,405:</b> J<sub>0</sub>(β) = 0 — a raia da portadora desaparece! (É assim que se calibra o desvio de um transmissor FM.)</li>
       <li><b>Regra de Carson:</b> B ≈ 2(Δf + W) contém ~98% da potência. Compare com a banda 99% medida.</li>
       <li><b>Banda estreita (β ≪ 1):</b> só f<sub>c</sub> e f<sub>c</sub> ± f<sub>m</sub> importam, como no AM — mas a raia inferior tem fase invertida (a envoltória fica quase constante).</li>
